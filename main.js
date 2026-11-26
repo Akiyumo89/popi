@@ -10,14 +10,15 @@ let enemys = [];
 let bullets = [];
 let kills = 0;
 let pause = 0;
-let hp = 1000;
+let hp = 100;
 let shotTimer = 0;
+let boss = null
 let player;
 
 const keys = { up: false, down: false, left: false, right: false };
 
 class Player {
-    constructor(x, y, color, scale, speed = 7) {
+    constructor(x, y, color, scale, speed = 5) {
         this.x = x;
         this.y = y;
         this.color = color;
@@ -36,7 +37,7 @@ class Player {
         ctx.rect(this.x, this.y + this.scale + 8, this.scale, 6);
         ctx.fill();
 
-        let hpWidth = this.scale * (hp / 1000);
+        let hpWidth = this.scale * (hp / 100);
         if (hpWidth > 0) {
             ctx.beginPath();
             ctx.fillStyle = 'rgb(44, 231, 44)';
@@ -52,7 +53,7 @@ class Player {
 
     tryshot() {
         let target = this.find();
-        if (target && shotTimer >= 45) {
+        if (target && shotTimer >= 30) {
             let newBullet = new Bullet(this.x + this.scale / 2, this.y + this.scale / 2);
             newBullet.SetTarget(target);
             bullets.push(newBullet);
@@ -117,12 +118,12 @@ class Bullet {
     }
 
     die() {
-    if (!this.enemy) return;
+        if (!this.enemy) return;
     
-    let distance = Math.hypot((this.enemy.x + 12) - this.x, (this.enemy.y + 12) - this.y);
+        let distance = Math.hypot((this.enemy.x + 12) - this.x, (this.enemy.y + 12) - this.y);
     
     if (distance < 10) {
-        this.isAlive = false;
+            this.isAlive = false;
         
         for (let i = 0; i < enemys.length; i++) {
             let targetDistance = Math.hypot((enemys[i].x + 12) - this.x, (enemys[i].y + 12) - this.y);
@@ -132,14 +133,14 @@ class Bullet {
                 
                 if (enemys[i].hp <= 0) {
                     enemys[i].die();
-                    kills++;
-                }
+                kills++;
+            }
             }
         }
         
-        this.enemy = null;
+            this.enemy = null;
+        }
     }
-}
 }
 
 class Enemy {
@@ -200,6 +201,51 @@ class Enemy {
     }
 }
 
+class Boss {
+    constructor() {
+        this.x = can_w / 2 - 100;
+        this.y = -150; 
+        this.speed = 0.5;
+        this.scale = 150;
+        this.hp = 500; 
+        this.maxHp = 500;
+    }
+
+    render() {
+
+        ctx.beginPath();
+        ctx.fillStyle = 'rgb(153, 107, 107)';
+        ctx.rect(this.x, this.y, this.scale, this.scale);
+        ctx.fill();
+
+        let bossHpWidth = 600 * (this.hp / this.maxHp);
+        if (bossHpWidth > 0) {
+            ctx.beginPath();
+            ctx.fillStyle = 'red';
+            ctx.rect(can_w / 2 - 300, 20, bossHpWidth, 20);
+            ctx.fill();
+        }
+
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('ВАНЯ ГУБИЧЕВ', can_w / 2, 15);
+        ctx.textAlign = 'left'; 
+    }
+
+    dvig1() {
+        let playerCenterX = player.x + (player.scale / 2);
+        let playerCenterY = player.y + (player.scale / 2);
+        let bossCenterX = this.x + (this.scale / 2);
+        let bossCenterY = this.y + (this.scale / 2);
+
+        if (bossCenterX < playerCenterX) this.x += this.speed;
+        if (bossCenterX > playerCenterX) this.x -= this.speed;
+        if (bossCenterY < playerCenterY) this.y += this.speed;
+        if (bossCenterY > playerCenterY) this.y -= this.speed;
+    }
+}
+
 function drawBG() {
     ctx.beginPath();
     ctx.fillStyle = '#A08F65';
@@ -231,7 +277,31 @@ function Animate() {
 
     ctx.fillStyle = 'black';
     ctx.font = 'bold 30px Arial';
-    ctx.fillText('НЕГРЫ: ' + kills, 20, 25);
+    ctx.fillText('негры: ' + kills, 20, 25);
+
+    if (hp <= 0) {
+        ctx.fillStyle = 'red';
+        ctx.font = 'bold 80px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+        
+        ctx.font = 'bold 30px Arial';
+        ctx.fillStyle = 'black';
+        ctx.fillText('Нажми F5 чтобы начать заново', canvas.width / 2, canvas.height / 2 + 60);
+        ctx.textAlign = 'left';
+        
+        player.Render();
+        for (let i = 0; i < enemys.length; i++) {
+            enemys[i].render();
+        }
+        
+        requestAnimationFrame(Animate);
+        return;
+    }
+
+    if (kills = 1000 && boss === null) {
+        boss = new Boss()
+    }
 
     if (pause === 0) {
         player.Update();
@@ -239,6 +309,10 @@ function Animate() {
         for (let i = 0; i < enemys.length; i++) {
             const enemy = enemys[i];
             enemy.dvig1();
+        }
+
+        if (boss !== null) {
+            boss.dvig1()
         }
 
         shotTimer++;
@@ -259,6 +333,10 @@ function Animate() {
                 pause = 1;
             }
         }
+    }
+
+    if (boss !== null) {
+        boss.render()
     }
 
     for (let b = 0; b < bullets.length; b++) {
@@ -309,7 +387,7 @@ function setup() {
     player = new Player(275, 275, 'white', 50, 4);
     bullets = [];
     enemys = [];
-    shotTimer = 60;
+    shotTimer = 30;
     negEnemy();
     Animate();
 }
